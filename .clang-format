@@ -1,0 +1,14 @@
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: true
+# 强制模板声明换行（只有新版 clang-format 支持）
+AlwaysBreakTemplateDeclarations: true
+
+AllowShortFunctionsOnASingleLine: false
+IndentWidth: 4
+AccessModifierOffset: -4
+BreakBeforeBraces: Allman
+ColumnLimit: 100
+

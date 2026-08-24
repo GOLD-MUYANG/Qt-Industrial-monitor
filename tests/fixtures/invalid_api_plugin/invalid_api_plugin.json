@@ -1,0 +1,6 @@
+{
+    "key": "invalid-api",
+    "displayName": "Invalid API fixture",
+    "apiVersion": 999,
+    "capabilities": []
+}

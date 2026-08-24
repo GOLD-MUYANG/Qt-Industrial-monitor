@@ -1,0 +1,6 @@
+{
+    "key": "modbus-tcp",
+    "displayName": "Modbus TCP",
+    "apiVersion": 1,
+    "capabilities": ["read-registers", "write-register"]
+}
