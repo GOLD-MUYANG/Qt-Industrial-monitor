@@ -29,6 +29,7 @@ public:
 public slots:
     void advanceOnce();
     bool setTargetSpeed(quint16 speed);
+    bool setHighTemperatureEnabled(bool enabled);
 
 signals:
     void runningChanged(bool running);

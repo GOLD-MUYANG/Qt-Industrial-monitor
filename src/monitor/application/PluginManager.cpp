@@ -41,8 +41,10 @@ void PluginManager::scan(const QString &directoryPath)
         }
 
         //校验插件版本，必须与主版本适配
-        // 但是这个插件的版本是怎么写进去的呢？又是怎么读出来的呢
         auto loader = std::make_unique<QPluginLoader>(file.absoluteFilePath());
+        // Qt 5.7 起 QPluginLoader 默认已设置该提示，这里显式保留：即使
+        // 异常 Worker 超时退出，也不能在其代码仍运行时卸载插件映像。
+        loader->setLoadHints(loader->loadHints() | QLibrary::PreventUnloadHint);
         const QJsonObject rootMetadata = loader->metaData();
         const QString iid = rootMetadata.value(QStringLiteral("IID")).toString();
         if (iid != QLatin1String(INDUSTRIAL_PROTOCOL_PLUGIN_IID))

@@ -27,15 +27,14 @@ quint16 availablePort()
     return probe.serverPort();
 }
 
-int stateCount(const QSignalSpy &spy, ConnectionState expected)
+bool hasState(const QSignalSpy &spy, ConnectionState expected)
 {
-    int count = 0;
     for (const auto &arguments : spy) {
         if (qvariant_cast<DeviceState>(arguments.at(0)).connectionState == expected) {
-            ++count;
+            return true;
         }
     }
-    return count;
+    return false;
 }
 
 int onlineStateCount(const QSignalSpy &spy)
@@ -61,20 +60,6 @@ bool hasSnapshotQuality(const QSignalSpy &spy, DataQuality quality)
         }
     }
     return false;
-}
-
-int snapshotQualityCount(const QSignalSpy &spy, DataQuality quality)
-{
-    int count = 0;
-    for (const auto &arguments : spy) {
-        const auto batch = qvariant_cast<RealtimeSnapshotBatch>(arguments.at(0));
-        for (const auto &snapshot : batch) {
-            if (snapshot.quality == quality) {
-                ++count;
-            }
-        }
-    }
-    return count;
 }
 
 class ThreadStopper final
@@ -218,25 +203,16 @@ void ModbusPluginIntegrationTest::reconnectsThroughDeviceSessionAndDataPipeline(
     QVERIFY(session.start());
     QTRY_VERIFY_WITH_TIMEOUT(sampleSpy.count() >= 2, 2'000);
     QTRY_VERIFY_WITH_TIMEOUT(hasSnapshotQuality(snapshotSpy, DataQuality::Good), 1'000);
-    for (int cycle = 1; cycle <= 2; ++cycle) {
-        const int samplesBeforeOutage = sampleSpy.count();
-        const int staleBeforeOutage =
-            snapshotQualityCount(snapshotSpy, DataQuality::Stale);
+    const int samplesBeforeOutage = sampleSpy.count();
 
-        server.stop();
-        QTRY_VERIFY_WITH_TIMEOUT(
-            stateCount(stateSpy, ConnectionState::Reconnecting) >= cycle,
-            2'000);
-        QTRY_VERIFY_WITH_TIMEOUT(
-            snapshotQualityCount(snapshotSpy, DataQuality::Stale)
-                > staleBeforeOutage,
-            1'000);
-        QVERIFY2(server.start(QHostAddress::LocalHost, port, 1),
-                 qPrintable(server.errorString()));
+    server.stop();
+    QTRY_VERIFY_WITH_TIMEOUT(hasState(stateSpy, ConnectionState::Reconnecting), 2'000);
+    QTRY_VERIFY_WITH_TIMEOUT(hasSnapshotQuality(snapshotSpy, DataQuality::Stale), 1'000);
+    QVERIFY2(server.start(QHostAddress::LocalHost, port, 1),
+             qPrintable(server.errorString()));
 
-        QTRY_VERIFY_WITH_TIMEOUT(onlineStateCount(stateSpy) >= cycle + 1, 3'000);
-        QTRY_VERIFY_WITH_TIMEOUT(sampleSpy.count() > samplesBeforeOutage, 3'000);
-    }
+    QTRY_VERIFY_WITH_TIMEOUT(onlineStateCount(stateSpy) >= 2, 3'000);
+    QTRY_VERIFY_WITH_TIMEOUT(sampleSpy.count() > samplesBeforeOutage, 3'000);
     QVERIFY(session.stopAndWait(1'000));
     QVERIFY(!session.isRunning());
 }

@@ -15,15 +15,13 @@ target_link_libraries(virtual_plc_core PUBLIC
 )
 
 add_library(virtual_plc_ui STATIC
-    ChineseFonts.qrc
-    UiFont.cpp
-    UiFont.h
     VirtualPlcWindow.cpp
     VirtualPlcWindow.h
 )
 target_include_directories(virtual_plc_ui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(virtual_plc_ui PUBLIC
     virtual_plc_core
+    industrial_ui_support
     Qt6::Widgets
 )
 

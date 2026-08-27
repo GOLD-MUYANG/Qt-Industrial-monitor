@@ -1,6 +1,7 @@
-# 第一周只安装可运行闭环所需目标；测试夹具和静态内部库不进入安装目录。
+# 只安装可运行闭环所需目标；测试夹具和静态内部库不进入安装目录。
 install(TARGETS
     industrial_monitor
+    industrial_monitor_qml
     virtual_plc
     protocol_sdk
     RUNTIME DESTINATION bin
@@ -19,6 +20,9 @@ install(FILES
 )
 
 set_target_properties(industrial_monitor PROPERTIES
+    INSTALL_RPATH "$ORIGIN"
+)
+set_target_properties(industrial_monitor_qml PROPERTIES
     INSTALL_RPATH "$ORIGIN"
 )
 set_target_properties(modbus_tcp_plugin PROPERTIES

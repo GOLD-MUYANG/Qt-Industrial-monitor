@@ -191,7 +191,7 @@ Expected: skipped 和断线恢复场景通过。
 - Consumes: `IProtocolPlugin::createWorker()`、Task 2 的 `DataPipeline`、Task 3 的 Worker。
 - Produces: `DeviceSession::start()`、`requestStop()`、`stopAndWait(int)` 以及代理的状态、样本、写结果、错误和日志信号。
 
-- [x] **Step 1: 写线程归属和有限停止失败测试**
+- [ ] **Step 1: 写线程归属和有限停止失败测试**
 
 ```cpp
 session.start();
@@ -201,21 +201,21 @@ QVERIFY(session.stopAndWait(1000));
 QVERIFY(!session.isRunning());
 ```
 
-- [x] **Step 2: 运行红灯并实现 DeviceSession**
+- [ ] **Step 2: 运行红灯并实现 DeviceSession**
 
 Run: `cmake --build build --target tst_device_session -j2`
 
 Expected: 首次因 `DeviceSession` 不存在而失败；实现后启动和停止均发生在通信线程。
 
-- [x] **Step 3: 扩展动态插件集成测试**
+- [ ] **Step 3: 扩展动态插件集成测试**
 
 测试通过 `PluginManager -> DeviceSession -> communication QThread -> ModbusTcpWorker -> VirtualPLC` 连续采集；停止/重启服务器后再次 Online 和收到新序号；`stopAndWait()` 后线程不运行。
 
-- [x] **Step 4: 更新控制台装配和文档**
+- [ ] **Step 4: 更新控制台装配和文档**
 
 控制台使用 `DeviceSession`，把其样本以 queued connection 投递给数据线程中的 `DataPipeline`，输出实时快照；README 和主设计文档只声明实际完成并给出第二周演示命令。
 
-- [x] **Step 5: 完整验证**
+- [ ] **Step 5: 完整验证**
 
 Run: `cmake -S . -B build -DBUILD_TESTING=ON`
 

@@ -48,7 +48,6 @@ bool configureChineseUiFont()
         return false;
     }
 
-    // 字体集合同时包含普通和等宽字体，窗口控件优先使用普通字体。
     for (const QString &family : families) {
         if (!family.contains(QStringLiteral("Mono"), Qt::CaseInsensitive)) {
             state.uiFamily = family;

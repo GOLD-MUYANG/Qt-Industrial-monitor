@@ -45,11 +45,48 @@ private slots:
     void staleAndBadSamplesDoNotChangeStatistics();
     void reconnectMarksExistingSnapshotsStale();
     void rejectsOutOfOrderAndOutOfRangeSamples();
+    void emitsOnlyValidatedGoodSamplesForStorage();
+    void intentionalRestartAcceptsNewSessionSequence();
 };
 
 void DataPipelineTest::initTestCase()
 {
     registerProtocolMetaTypes();
+}
+
+void DataPipelineTest::intentionalRestartAcceptsNewSessionSequence()
+{
+    DataPipeline pipeline;
+    QSignalSpy acceptedSpy(&pipeline, &DataPipeline::validatedSamplesReady);
+    QSignalSpy errorSpy(&pipeline, &DataPipeline::pipelineError);
+    const QDateTime base = QDateTime::fromMSecsSinceEpoch(1'000, Qt::UTC);
+
+    pipeline.processSamples({sample(42.0, DataQuality::Good, 5, base)});
+    pipeline.resetDeviceSession(QStringLiteral("plc-1"));
+    pipeline.processSamples(
+        {sample(43.0, DataQuality::Good, 1, base.addSecs(1))});
+
+    QCOMPARE(acceptedSpy.count(), 2);
+    QCOMPARE(errorSpy.count(), 0);
+}
+
+void DataPipelineTest::emitsOnlyValidatedGoodSamplesForStorage()
+{
+    DataPipeline pipeline;
+    QSignalSpy acceptedSpy(&pipeline, &DataPipeline::validatedSamplesReady);
+    const QDateTime base = QDateTime::fromMSecsSinceEpoch(1'000, Qt::UTC);
+
+    pipeline.processSamples({sample(42.0, DataQuality::Good, 1, base)});
+    pipeline.processSamples(
+        {sample(42.0, DataQuality::Stale, 2, base.addMSecs(500))});
+    pipeline.processSamples(
+        {sample(201.0, DataQuality::Good, 3, base.addSecs(1))});
+
+    QCOMPARE(acceptedSpy.count(), 1);
+    const auto accepted =
+        qvariant_cast<SampleBatch>(acceptedSpy.constFirst().at(0));
+    QCOMPARE(accepted.size(), 1);
+    QCOMPARE(accepted.constFirst().engineeringValue, 42.0);
 }
 
 void DataPipelineTest::aggregatesGoodSamples()
@@ -121,11 +158,7 @@ void DataPipelineTest::rejectsOutOfOrderAndOutOfRangeSamples()
     pipeline.processSamples({sample(43.0, DataQuality::Good, 1, base.addMSecs(500))});
     pipeline.processSamples({sample(201.0, DataQuality::Good, 3, base.addSecs(1))});
 
-    QCOMPARE(snapshotSpy.count(), 2);
-    const auto badSnapshot = lastSnapshot(snapshotSpy);
-    QCOMPARE(badSnapshot.current, 42.0);
-    QCOMPARE(badSnapshot.sampleCount, 1);
-    QCOMPARE(badSnapshot.quality, DataQuality::Bad);
+    QCOMPARE(snapshotSpy.count(), 1);
     QCOMPARE(errorSpy.count(), 2);
     const auto sequenceError = qvariant_cast<DeviceError>(errorSpy.at(0).at(0));
     QCOMPARE(sequenceError.category, DeviceErrorCategory::Data);

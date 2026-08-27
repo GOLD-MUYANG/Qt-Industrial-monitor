@@ -101,6 +101,20 @@ bool VirtualPlcServer::setTargetSpeed(quint16 speed)
     return true;
 }
 
+bool VirtualPlcServer::setHighTemperatureEnabled(bool enabled)
+{
+    if (enabled) {
+        if (!m_simulation.setTemperatureOverride(863)) {
+            m_lastError = QStringLiteral("无法启用 86.3 ℃ 高温覆盖");
+            return false;
+        }
+    } else {
+        m_simulation.clearTemperatureOverride();
+    }
+    advanceOnce();
+    return m_lastError.isEmpty();
+}
+
 void VirtualPlcServer::handleDataWritten(int table, int address, int size)
 {
     if (table != QModbusDataUnit::HoldingRegisters

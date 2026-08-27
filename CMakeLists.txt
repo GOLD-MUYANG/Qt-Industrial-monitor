@@ -17,6 +17,9 @@ find_package(Qt6 6.2 REQUIRED COMPONENTS
     Charts
     Core
     Network
+    Qml
+    Quick
+    QuickControls2
     Sql
     Test
     Widgets
@@ -28,9 +31,11 @@ industrial_resolve_qt_serial_bus()
 include(CTest)
 
 add_subdirectory(src/protocol_sdk)
+add_subdirectory(src/ui_support)
 add_subdirectory(src/virtual_plc)
 add_subdirectory(src/plugins/modbus_tcp)
 add_subdirectory(src/monitor)
+add_subdirectory(src/monitor_qml)
 
 include(cmake/InstallLayout.cmake)
 

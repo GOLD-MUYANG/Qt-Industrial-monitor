@@ -25,6 +25,7 @@ class VirtualPlcServerTest final : public QObject
 private slots:
     void startsWithDocumentedRegisterMap();
     void canRestartAfterStop();
+    void synchronizesHighTemperatureFaultInjection();
 };
 
 void VirtualPlcServerTest::startsWithDocumentedRegisterMap()
@@ -41,6 +42,24 @@ void VirtualPlcServerTest::startsWithDocumentedRegisterMap()
 
     server.stop();
     QTRY_VERIFY_WITH_TIMEOUT(!server.isRunning(), 1000);
+}
+
+void VirtualPlcServerTest::synchronizesHighTemperatureFaultInjection()
+{
+    const quint16 port = availablePort();
+    QVERIFY(port != 0);
+    VirtualPlcServer server;
+    QVERIFY(server.start(QHostAddress::LocalHost, port, 1));
+
+    QVERIFY(server.setHighTemperatureEnabled(true));
+    QCOMPARE(server.registerBank().value(RegisterBank::Temperature), quint16(863));
+    server.advanceOnce();
+    QCOMPARE(server.registerBank().value(RegisterBank::Temperature), quint16(863));
+
+    QVERIFY(server.setHighTemperatureEnabled(false));
+    QVERIFY(server.registerBank().value(RegisterBank::Temperature) >= 415);
+    QVERIFY(server.registerBank().value(RegisterBank::Temperature) <= 425);
+    server.stop();
 }
 
 void VirtualPlcServerTest::canRestartAfterStop()

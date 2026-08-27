@@ -82,6 +82,19 @@ VirtualPlcWindow::VirtualPlcWindow(QWidget *parent)
     writeLayout->addWidget(applyButton);
     rootLayout->addLayout(writeLayout);
 
+    // 故障注入区：高温是确定性寄存器覆盖，停止 Server 用于通信故障演示。
+    auto *faultLayout = new QHBoxLayout;
+    faultLayout->addWidget(new QLabel(QStringLiteral("报警演示："),
+                                      centralWidget));
+    m_highTemperatureButton =
+        new QPushButton(QStringLiteral("启用高温 86.3 ℃"), centralWidget);
+    m_highTemperatureButton->setCheckable(true);
+    m_highTemperatureButton->setAccessibleName(
+        QStringLiteral("高温报警故障注入"));
+    faultLayout->addWidget(m_highTemperatureButton);
+    faultLayout->addStretch();
+    rootLayout->addLayout(faultLayout);
+
     setCentralWidget(centralWidget);
     statusBar()->showMessage(QStringLiteral("Unit ID 1，500 ms 确定性模拟"));
 
@@ -91,6 +104,19 @@ VirtualPlcWindow::VirtualPlcWindow(QWidget *parent)
             &m_server, &VirtualPlcServer::stop);
     connect(applyButton, &QPushButton::clicked,
             this, &VirtualPlcWindow::applyTargetSpeed);
+    connect(m_highTemperatureButton, &QPushButton::toggled, this,
+            [this](bool enabled) {
+                if (!m_server.setHighTemperatureEnabled(enabled)) {
+                    statusBar()->showMessage(m_server.errorString());
+                    return;
+                }
+                m_highTemperatureButton->setText(enabled
+                    ? QStringLiteral("高温已启用：86.3 ℃")
+                    : QStringLiteral("启用高温 86.3 ℃"));
+                statusBar()->showMessage(enabled
+                    ? QStringLiteral("高温故障注入已启用，保持 86.3 ℃")
+                    : QStringLiteral("高温故障注入已清除，恢复确定性波形"));
+            });
     connect(&m_server, &VirtualPlcServer::registersChanged,
             this, &VirtualPlcWindow::refreshValues);
     connect(&m_server, &VirtualPlcServer::runningChanged, this,

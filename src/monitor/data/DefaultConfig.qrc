@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/industrial_monitor/config">
+        <file alias="default.json">default_config.json</file>
+    </qresource>
+</RCC>

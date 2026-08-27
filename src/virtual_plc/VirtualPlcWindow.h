@@ -31,4 +31,5 @@ private:
     QPushButton *m_startButton = nullptr;
     QPushButton *m_stopButton = nullptr;
     QSpinBox *m_targetSpeedSpinBox = nullptr;
+    QPushButton *m_highTemperatureButton = nullptr;
 };

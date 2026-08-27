@@ -1,0 +1,30 @@
+{
+  "device": {
+    "id": "virtual-plc-1",
+    "name": "VirtualPLC",
+    "protocolKey": "modbus-tcp",
+    "host": "127.0.0.1",
+    "port": 1502,
+    "unitId": 1,
+    "pollIntervalMs": 500,
+    "timeoutMs": 800,
+    "protocolRetries": 1,
+    "failureThreshold": 3,
+    "enabled": true
+  },
+  "tags": [
+    {"id": "temperature", "name": "温度", "unit": "℃", "address": 0, "scale": 0.1, "writable": false},
+    {"id": "pressure", "name": "压力", "unit": "MPa", "address": 1, "scale": 0.01, "writable": false},
+    {"id": "speed", "name": "转速", "unit": "rpm", "address": 2, "scale": 1.0, "writable": false},
+    {"id": "voltage", "name": "电压", "unit": "V", "address": 3, "scale": 0.1, "writable": false},
+    {"id": "status", "name": "运行状态", "unit": "", "address": 4, "scale": 1.0, "writable": false},
+    {"id": "target-speed", "name": "目标转速", "unit": "rpm", "address": 10, "scale": 1.0, "writable": true}
+  ],
+  "alarmRules": [
+    {"id": "temperature-range", "tagId": "temperature", "kind": 0, "lower": 10.0, "upper": 80.0, "hysteresis": 2.0, "activationSamples": 3, "recoverySamples": 3, "severity": 1, "enabled": true, "message": "温度超出 10..80 ℃"},
+    {"id": "pressure-range", "tagId": "pressure", "kind": 0, "lower": 0.5, "upper": 2.0, "hysteresis": 0.1, "activationSamples": 3, "recoverySamples": 3, "severity": 0, "enabled": true, "message": "压力超出 0.5..2.0 MPa"},
+    {"id": "speed-range", "tagId": "speed", "kind": 0, "lower": 500.0, "upper": 3000.0, "hysteresis": 100.0, "activationSamples": 3, "recoverySamples": 3, "severity": 0, "enabled": true, "message": "转速超出 500..3000 rpm"},
+    {"id": "voltage-range", "tagId": "voltage", "kind": 0, "lower": 210.0, "upper": 240.0, "hysteresis": 5.0, "activationSamples": 3, "recoverySamples": 3, "severity": 0, "enabled": true, "message": "电压超出 210..240 V"},
+    {"id": "communication-disconnected", "tagId": null, "kind": 1, "lower": null, "upper": null, "hysteresis": 0.0, "activationSamples": 1, "recoverySamples": 1, "severity": 1, "enabled": true, "message": "设备通信中断"}
+  ]
+}

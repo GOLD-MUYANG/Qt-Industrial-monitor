@@ -18,13 +18,32 @@ quint16 valueFromWave(quint16 base, const std::array<int, Size> &wave, quint64 t
 
 } // namespace
 
+bool SimulationEngine::setTemperatureOverride(quint16 rawTemperature)
+{
+    if (rawTemperature > 2'000) {
+        return false;
+    }
+    m_hasTemperatureOverride = true;
+    m_temperatureOverride = rawTemperature;
+    return true;
+}
+
+void SimulationEngine::clearTemperatureOverride()
+{
+    m_hasTemperatureOverride = false;
+}
+
 void SimulationEngine::advance(RegisterBank &registers)
 {
     static constexpr std::array<int, 8> TemperatureWave{0, 2, 4, 5, 3, 0, -3, -5};
     static constexpr std::array<int, 8> PressureWave{0, 1, 2, 1, 0, -1, -2, -1};
     static constexpr std::array<int, 8> VoltageWave{0, 1, 2, 1, 0, -1, -2, -1};
 
-    registers.setValue(RegisterBank::Temperature, valueFromWave(420, TemperatureWave, m_tick));
+    registers.setValue(
+        RegisterBank::Temperature,
+        m_hasTemperatureOverride
+            ? m_temperatureOverride
+            : valueFromWave(420, TemperatureWave, m_tick));
     registers.setValue(RegisterBank::Pressure, valueFromWave(120, PressureWave, m_tick));
     registers.setValue(RegisterBank::Voltage, valueFromWave(2200, VoltageWave, m_tick));
 

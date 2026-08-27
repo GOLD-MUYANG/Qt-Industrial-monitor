@@ -1,6 +1,10 @@
 #include "DeviceSession.h"
 
+#include <QCoreApplication>
+#include <QEvent>
+#include <QEventLoop>
 #include <QThread>
+#include <QTimer>
 
 using namespace industrial::protocol;
 
@@ -116,8 +120,22 @@ bool DeviceSession::stopAndWait(int timeoutMs)
         return false;
     }
 
+    // 使用局部事件循环等待，使通信线程退出前已经投递到 Session 的
+    // samples/state 信号仍能转发给数据线程；排除用户输入避免重入命令。
+    QEventLoop loop;
+    QTimer timeoutTimer;
+    timeoutTimer.setSingleShot(true);
+    connect(m_thread, &QThread::finished, &loop, &QEventLoop::quit);
+    connect(&timeoutTimer, &QTimer::timeout, &loop, &QEventLoop::quit);
     requestStop();
-    if (m_thread->wait(static_cast<unsigned long>(qMax(0, timeoutMs)))) {
+    timeoutTimer.start(qMax(0, timeoutMs));
+    if (m_thread && m_thread->isRunning()) {
+        loop.exec(QEventLoop::ExcludeUserInputEvents);
+    }
+    // QThread::finished 与 Worker 的最后一批 queued 信号面向不同接收者，
+    // 不能依赖二者的跨接收者派发顺序；返回前显式派发本 Session 的元调用。
+    QCoreApplication::sendPostedEvents(this, QEvent::MetaCall);
+    if (!m_thread || !m_thread->isRunning()) {
         return true;
     }
     reportLifecycleError(

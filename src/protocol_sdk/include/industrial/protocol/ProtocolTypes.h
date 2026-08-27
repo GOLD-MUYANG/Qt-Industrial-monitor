@@ -40,6 +40,8 @@ enum class DeviceErrorCategory : quint8
 struct DeviceConfig
 {
     QString id;
+    QString name;
+    QString protocolKey;
     QString host = QStringLiteral("127.0.0.1");
     quint16 port = 1502;
     int unitId = 1;
@@ -48,6 +50,7 @@ struct DeviceConfig
     int pollIntervalMs = 500;
     int consecutiveFailureLimit = 3;
     QList<int> reconnectDelaysMs = {1'000, 2'000, 4'000, 8'000, 10'000};
+    bool enabled = true;
 };
 
 struct ProtocolDescriptor

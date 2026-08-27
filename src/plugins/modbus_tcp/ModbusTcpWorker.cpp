@@ -63,7 +63,9 @@ void ModbusTcpWorker::start()
 
     // 网络对象和定时器只在 Worker 已归属的通信线程中创建。
     m_client = new QModbusTcpClient(this);
+    // 周期采集
     m_pollTimer = new QTimer(this);
+    // 断线重连一次
     m_reconnectTimer = new QTimer(this);
     m_pollTimer->setInterval(m_config.pollIntervalMs);
     m_reconnectTimer->setSingleShot(true);
