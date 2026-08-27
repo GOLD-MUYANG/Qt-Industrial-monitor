@@ -2,6 +2,7 @@
 
 #include "AlarmTypes.h"
 #include "PluginManager.h"
+#include "VisionTypes.h"
 
 #include <QPointer>
 #include <QThread>
@@ -14,6 +15,9 @@ class DataPipeline;
 class DeviceSession;
 class HistoryWorker;
 class StorageWorker;
+namespace industrial::monitor::vision {
+class VisionSession;
+}
 
 class ApplicationController final : public QObject
 {
@@ -36,6 +40,10 @@ public slots:
     void applyDeviceConfig(
         const industrial::protocol::DeviceConfig &config);
     void acknowledgeAlarm(const QString &alarmId, const QString &note);
+    void openVisionVideo(const QString &path);
+    void playVisionVideo();
+    void pauseVisionVideo();
+    void stopVisionVideo();
 
 signals:
     void protocolAvailable(
@@ -52,6 +60,14 @@ signals:
         const industrial::protocol::WriteResult &result);
     void storageStatusChanged(const QString &message, bool healthy);
     void fatalError(const QString &message);
+    void visionSourceOpened(
+        const industrial::monitor::vision::VisionSourceInfo &source);
+    void visionFrameReady(
+        const industrial::monitor::vision::VisionFrameResult &frame);
+    void visionStateChanged(
+        industrial::monitor::vision::VisionPlaybackState state,
+        const QString &message);
+    void visionError(const QString &message);
 
     // 内部命令信号只负责跨线程投递，调用方看不到 Worker 指针。
     void configureAlarmRulesRequested(
@@ -68,6 +84,7 @@ private:
     void setupDataThread();
     void setupStorageThread();
     void setupHistoryThread();
+    void setupVisionSession();
     void reportCommunicationError(
         const industrial::protocol::DeviceError &error);
 
@@ -78,6 +95,7 @@ private:
     PluginManager m_pluginManager;
     industrial::protocol::IProtocolPlugin *m_plugin = nullptr;
     std::unique_ptr<DeviceSession> m_session;
+    std::unique_ptr<industrial::monitor::vision::VisionSession> m_visionSession;
 
     QThread m_dataThread;
     QThread m_storageThread;

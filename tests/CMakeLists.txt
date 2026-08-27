@@ -5,6 +5,81 @@ target_link_libraries(tst_protocol_types PRIVATE
 )
 add_test(NAME unit.protocol_types COMMAND tst_protocol_types)
 
+add_executable(tst_vision_types unit/tst_vision_types.cpp)
+target_include_directories(tst_vision_types PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/monitor/vision"
+)
+target_link_libraries(tst_vision_types PRIVATE monitor_vision Qt6::Test)
+add_test(NAME unit.vision_types COMMAND tst_vision_types)
+
+add_executable(tst_color_object_detector
+    unit/tst_color_object_detector.cpp
+)
+target_link_libraries(tst_color_object_detector PRIVATE
+    monitor_vision
+    Qt6::Test
+)
+add_test(NAME unit.color_object_detector COMMAND tst_color_object_detector)
+
+add_executable(tst_vision_frame_converter
+    unit/tst_vision_frame_converter.cpp
+)
+target_link_libraries(tst_vision_frame_converter PRIVATE
+    monitor_vision
+    Qt6::Test
+)
+add_test(NAME unit.vision_frame_converter COMMAND tst_vision_frame_converter)
+
+add_executable(tst_vision_playback_policy
+    unit/tst_vision_playback_policy.cpp
+)
+target_link_libraries(tst_vision_playback_policy PRIVATE
+    monitor_vision
+    Qt6::Test
+)
+add_test(NAME unit.vision_playback_policy COMMAND tst_vision_playback_policy)
+
+add_executable(tst_video_file_worker
+    integration/tst_video_file_worker.cpp
+)
+target_link_libraries(tst_video_file_worker PRIVATE
+    monitor_vision
+    Qt6::Test
+)
+add_test(NAME integration.video_file_worker COMMAND tst_video_file_worker)
+
+add_executable(tst_vision_session unit/tst_vision_session.cpp)
+target_link_libraries(tst_vision_session PRIVATE
+    monitor_vision
+    Qt6::Test
+)
+add_test(NAME unit.vision_session COMMAND tst_vision_session)
+
+add_executable(tst_vision_page unit/tst_vision_page.cpp)
+target_link_libraries(tst_vision_page PRIVATE
+    monitor_presentation
+    monitor_vision
+    Qt6::Test
+)
+add_test(NAME unit.vision_page COMMAND tst_vision_page)
+set_tests_properties(unit.vision_page PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+add_executable(tst_application_controller_vision
+    unit/tst_application_controller_vision.cpp
+)
+target_compile_definitions(tst_application_controller_vision PRIVATE
+    MODBUS_PLUGIN_DIR="${CMAKE_BINARY_DIR}/bin/plugins"
+)
+target_link_libraries(tst_application_controller_vision PRIVATE
+    monitor_runtime
+    Qt6::Test
+)
+add_dependencies(tst_application_controller_vision modbus_tcp_plugin)
+add_test(NAME unit.application_controller_vision
+         COMMAND tst_application_controller_vision)
+
 add_executable(tst_rolling_statistics unit/tst_rolling_statistics.cpp)
 target_include_directories(tst_rolling_statistics PRIVATE
     "${PROJECT_SOURCE_DIR}/src/monitor/data"

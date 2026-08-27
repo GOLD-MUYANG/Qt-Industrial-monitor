@@ -5,10 +5,12 @@
 #include "HistoryWorker.h"
 #include "StorageTypes.h"
 #include "StorageWorker.h"
+#include "VisionSession.h"
 
 #include <QMetaObject>
 
 using namespace industrial::monitor;
+using namespace industrial::monitor::vision;
 using namespace industrial::protocol;
 
 ApplicationController::ApplicationController(const QString &pluginDirectory,
@@ -35,6 +37,7 @@ bool ApplicationController::start()
     registerProtocolMetaTypes();
     registerAlarmMetaTypes();
     registerStorageMetaTypes();
+    registerVisionMetaTypes();
 
     m_pluginManager.scan(m_pluginDirectory);
     if (!m_pluginManager.errors().isEmpty())
@@ -50,6 +53,13 @@ bool ApplicationController::start()
         return false;
     }
     emit protocolAvailable(m_plugin->descriptor());
+
+    setupVisionSession();
+    if (!m_visionSession->start())
+    {
+        emit visionError(QStringLiteral("启动视觉线程失败"));
+        m_visionSession.reset();
+    }
 
     setupDataThread();
     setupStorageThread();
@@ -80,6 +90,18 @@ bool ApplicationController::shutdown(int timeoutMs)
     }
 
     bool clean = true;
+    if (m_visionSession)
+    {
+        if (!m_visionSession->shutdown(timeoutMs))
+        {
+            clean = false;
+            emit visionError(QStringLiteral("视觉线程未能在 %1 ms 内停止").arg(timeoutMs));
+        }
+        else
+        {
+            m_visionSession.reset();
+        }
+    }
     if (m_session)
     {
         if (!stopDeviceSession(timeoutMs))
@@ -133,8 +155,37 @@ bool ApplicationController::shutdown(int timeoutMs)
 
 bool ApplicationController::isRunning() const
 {
-    return (m_session && m_session->isRunning()) || m_dataThread.isRunning() ||
+    return (m_visionSession && m_visionSession->isRunning()) ||
+           (m_session && m_session->isRunning()) || m_dataThread.isRunning() ||
            m_storageThread.isRunning() || m_historyThread.isRunning();
+}
+
+void ApplicationController::openVisionVideo(const QString &path)
+{
+    if (m_started && m_visionSession) {
+        m_visionSession->openVideo(path);
+    }
+}
+
+void ApplicationController::playVisionVideo()
+{
+    if (m_started && m_visionSession) {
+        m_visionSession->play();
+    }
+}
+
+void ApplicationController::pauseVisionVideo()
+{
+    if (m_started && m_visionSession) {
+        m_visionSession->pause();
+    }
+}
+
+void ApplicationController::stopVisionVideo()
+{
+    if (m_started && m_visionSession) {
+        m_visionSession->stop();
+    }
 }
 
 void ApplicationController::connectDevice()
@@ -354,6 +405,19 @@ void ApplicationController::setupHistoryThread()
             }
         },
         Qt::QueuedConnection);
+}
+
+void ApplicationController::setupVisionSession()
+{
+    m_visionSession = std::make_unique<VisionSession>();
+    connect(m_visionSession.get(), &VisionSession::sourceOpened,
+            this, &ApplicationController::visionSourceOpened);
+    connect(m_visionSession.get(), &VisionSession::frameReady,
+            this, &ApplicationController::visionFrameReady);
+    connect(m_visionSession.get(), &VisionSession::stateChanged,
+            this, &ApplicationController::visionStateChanged);
+    connect(m_visionSession.get(), &VisionSession::videoError,
+            this, &ApplicationController::visionError);
 }
 
 void ApplicationController::reportCommunicationError(const DeviceError &error)

@@ -2,6 +2,7 @@
 
 #include <QLineEdit>
 #include <QLabel>
+#include <QListWidget>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QPushButton>
@@ -11,6 +12,7 @@
 #include "DevicePage.h"
 #include "MainWindow.h"
 #include "RealtimePage.h"
+#include "VisionPage.h"
 
 using namespace industrial::monitor;
 using namespace industrial::protocol;
@@ -42,20 +44,26 @@ class MonitorWindowTest final : public QObject
     Q_OBJECT
 
 private slots:
-    void exposesThreeAccessiblePagesAndRetainsPausedChartData();
+    void exposesFourAccessiblePagesAndRetainsPausedChartData();
     void requestsTargetSpeedWriteAndShowsResult();
     void deviceEditorUsesLoadedProtocolAndEnabledState();
 };
 
-void MonitorWindowTest::exposesThreeAccessiblePagesAndRetainsPausedChartData()
+void MonitorWindowTest::exposesFourAccessiblePagesAndRetainsPausedChartData()
 {
     MainWindow window;
     auto *realtime = window.findChild<RealtimePage *>(QStringLiteral("realtimePage"));
     auto *device = window.findChild<DevicePage *>(QStringLiteral("devicePage"));
     auto *alarm = window.findChild<AlarmPage *>(QStringLiteral("alarmPage"));
+    auto *vision = window.findChild<VisionPage *>(QStringLiteral("visionPage"));
     QVERIFY(realtime);
     QVERIFY(device);
     QVERIFY(alarm);
+    QVERIFY(vision);
+    auto *navigation = window.findChild<QListWidget *>(QStringLiteral("mainNavigation"));
+    QVERIFY(navigation);
+    QCOMPARE(navigation->count(), 4);
+    QCOMPARE(navigation->item(3)->text(), QStringLiteral("视觉实验"));
 
     auto *hostEdit =
         window.findChild<QLineEdit *>(QStringLiteral("deviceHostEdit"));

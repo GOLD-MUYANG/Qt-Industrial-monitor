@@ -378,10 +378,9 @@ find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc videoio)
 `monitor_runtime` 和 `monitor_presentation` 只通过 `monitor_vision` 暴露的 Qt 值类型
 和会话接口接入，不在页面源文件中包含 OpenCV 头文件。
 
-当前环境尚未安装 OpenCV。Ubuntu 22.04 当前软件源提供
-`libopencv-dev 4.5.4+dfsg-9ubuntu4`；实施前需要得到用户授权后安装，并重新执行
-CMake 配置验证 `OpenCVConfig.cmake` 和三个组件。设计采用 OpenCV 4.x 稳定 API，
-不要求 OpenCV 5。
+实施时当前环境已经安装 `libopencv-dev 4.5.4+dfsg-9ubuntu4`。CMake 配置已实际
+找到 OpenCV 4.5.4 的 `core`、`imgproc` 和 `videoio` 三个组件，因此本轮没有执行
+软件包安装。实现只使用 OpenCV 4.x 稳定 API，不要求 OpenCV 5。
 
 ## 14. 测试设计
 
@@ -454,3 +453,68 @@ CMake 配置验证 `OpenCVConfig.cmake` 和三个组件。设计采用 OpenCV 4.
 
 该流程可以在几分钟内完整演示视频输入、OpenCV 算法、跨线程值对象、Qt 页面
 和错误隔离，符合练手项目的真实能力边界。
+
+## 17. 实施结果（2026-08-27）
+
+### 17.1 已完成文件与职责
+
+- `src/monitor/vision/VisionTypes.h/.cpp`：定义并注册播放状态、视频信息和帧结果值对象。
+- `src/monitor/vision/ColorObjectDetector.h/.cpp`：完成缩放、双红区 HSV 掩膜、开闭
+  去噪、轮廓过滤、稳定排序、画框和 ASCII 编号。
+- `src/monitor/vision/VisionFrameConverter.h/.cpp`：完成 BGR 到 RGB 转换，并在跨线程
+  发送前通过 `QImage::copy()` 获得独立像素。
+- `src/monitor/vision/VisionPlaybackPolicy.h/.cpp`：统一处理后端时间戳回退和 EOF 元数据
+  容差，避免不同视频后端的进度倒退与自然结尾误报。
+- `src/monitor/vision/VideoFileWorker.h/.cpp`：在视觉线程内创建和独占 Timer、Capture，
+  实现打开、首帧预览、播放、暂停、继续、停止、EOF、重播和错误状态。
+- `src/monitor/vision/VisionSession.h/.cpp`：管理 Worker/QThread、queued 命令、值对象
+  转发和有限等待关闭，不使用 `QThread::terminate()`。
+- `src/monitor/presentation/pages/VisionPage.h/.cpp`：完成第四个 Widgets 页面、文件选择、
+  状态按钮矩阵、等比画面、位置、目标数量、耗时和页内错误。
+- `ApplicationController`、`MainWindow` 和 `main.cpp`：完成视觉会话持有、命令/结果
+  转发和退出顺序装配。视觉错误不进入协议、报警或存储错误通道。
+- 顶层与 monitor CMake：新增 OpenCV 三组件查找和独立 `monitor_vision` 静态目标；
+  页面源文件没有包含 OpenCV 头文件。
+
+本轮没有给 QML 前端增加视觉页面，也没有修改 Modbus、数据质量、报警或 SQLite
+语义；这些内容保持在第 3.2 节的“不做”范围内。
+
+### 17.2 自动验证证据
+
+当前环境的验证结果：
+
+```text
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+-> Found OpenCV 4.5.4: core, imgproc, videoio
+
+cmake --build build -j2
+-> industrial_monitor、industrial_monitor_qml 和全部测试目标构建成功
+
+ctest --test-dir build --output-on-failure
+-> 35/35 passed（在允许本机环回监听的环境执行）
+```
+
+新增视觉相关测试与更新后的窗口测试为 9/9 通过：
+
+- `unit.vision_types`
+- `unit.color_object_detector`
+- `unit.vision_frame_converter`
+- `unit.vision_playback_policy`
+- `integration.video_file_worker`
+- `unit.vision_session`
+- `unit.vision_page`
+- `unit.application_controller_vision`
+- `unit.monitor_window`
+
+`integration.video_file_worker` 已使用当前 OpenCV 的 MJPEG `VideoWriter` 后端生成临时
+AVI 并真实解码，没有触发 `QSKIP`；测试覆盖首帧、播放、暂停、继续、EOF、结束后
+重播、停止重开、视觉线程发帧、主线程接收以及 shutdown。
+
+普通受限沙箱不能监听 socket 时，完整 CTest 会有 5 个既有 TCP 集成测试停在
+`listen()/port != 0`；在允许环回监听的环境重跑后，这 5 项与其余 30 项全部通过。
+
+### 17.3 仍需人工演示的边界
+
+自动测试已经验证合成图像算法和程序生成 MJPEG AVI 的真实解码链，但没有替用户
+选择一段外部 MP4/MOV/MKV 并观察桌面窗口。不同容器的实际可解码能力仍取决于
+本机 OpenCV 视频后端；按第 16 节用一段用户自备红色物体视频完成最终演示即可。

@@ -1,8 +1,8 @@
 # Qt Industrial Monitoring
 
-这是一个按四周边界逐步实现的 Qt 6 工业监控学习项目。当前已完成前三周：动态 Modbus TCP 插件与 VirtualPLC、每设备通信线程和断线重连、60 秒实时统计、报警生命周期、SQLite 独立读写线程，以及实时监控/设备管理/报警中心三个业务页面。工程同时提供 `industrial_monitor` Widgets 前端和 `industrial_monitor_qml` Qt Quick 并行前端，两者共用同一个 `ApplicationController` 和通信/数据/报警/存储后端。
+这是一个按里程碑逐步实现的 Qt 6 工业监控学习项目。当前已完成动态 Modbus TCP 插件与 VirtualPLC、每设备通信线程和断线重连、60 秒实时统计、报警生命周期、SQLite 独立读写线程，以及实时监控/设备管理/报警中心三个业务页面。Widgets 前端还增加了一个独立“视觉实验”页面，用 OpenCV 解码本地视频并按固定 HSV 规则检测高饱和红色物体。工程同时提供 `industrial_monitor` Widgets 前端和 `industrial_monitor_qml` Qt Quick 并行前端，两者共用同一个 `ApplicationController` 和通信/数据/报警/存储后端；视觉页面目前只在 Widgets 前端提供。
 
-VirtualPLC 与 IndustrialMonitor 共用应用内嵌中文字体，在没有系统 CJK 字体时也能正常显示中文。完整历史页面、CSV 导出、通信日志页面和滚动文件日志属于第四周，当前尚未实现。
+VirtualPLC 与 IndustrialMonitor 共用应用内嵌中文字体，在没有系统 CJK 字体时也能正常显示中文。完整历史页面、CSV 导出、通信日志页面和滚动文件日志当前尚未实现，不属于本次视觉实验增量。
 
 ## 本次 QML 并行界面更新
 
@@ -29,17 +29,39 @@ VirtualPLC
        -> Qt Quick 页面
 ```
 
+## OpenCV 视觉实验
+
+“视觉实验”是与 Modbus、报警和 SQLite 隔离的学习模块，运行链为：
+
+```text
+VisionPage                         [UI 主线程]
+-> ApplicationController
+-> VisionSession                  [主线程管理生命周期]
+-> VideoFileWorker                [视觉线程]
+   -> cv::VideoCapture + QTimer
+   -> ColorObjectDetector
+   -> VisionFrameConverter
+-> 独立 QImage 值对象
+-> VisionPage 创建 QPixmap        [UI 主线程]
+```
+
+它支持选择本地视频、首帧预览、播放、暂停、继续、停止和结束后重播；每帧先按需缩小到最大 1280 像素宽，再做两段 HSV 红色阈值、3x3 开闭去噪、500 px 面积过滤、外接框和计数。跨线程结果中的 `QImage` 已深拷贝，不引用下一帧会覆盖的 `cv::Mat` 内存。
+
+该模块是固定颜色规则实验，不是 AI、YOLO、通用目标识别或生产质检系统；它不访问摄像头，不保存检测结果，也不把视觉计数接入报警、Modbus 或 SQLite。详细能力边界见 [`文档/OpenCV视频目标检测设计.md`](文档/OpenCV视频目标检测设计.md)。
+
 ## 环境依赖
 
 - CMake 3.22+
 - 支持 C++17 的编译器
 - Qt 6.2+：Core、Widgets、Network、Sql、SerialBus、Qml、Quick、QuickControls2、Charts、Test
+- OpenCV 4：core、imgproc、videoio
 
 Ubuntu 22.04 建议安装完整开发包：
 
 ```bash
 sudo apt install qt6-base-dev qt6-declarative-dev libqt6charts6-dev \
     libqt6serialbus6-dev libqt6serialbus6-bin libqt6serialport6-dev \
+    libopencv-dev \
     qml6-module-qtqml-workerscript qml6-module-qtquick \
     qml6-module-qtquick-controls qml6-module-qtquick-layouts \
     qml6-module-qtquick-templates qml6-module-qtquick-window \
@@ -58,7 +80,7 @@ cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
 
-测试共 27 项：22 项不需要监听端口，覆盖协议/插件、通信线程、统计与数据质量、报警状态机、SQLite、Widgets 展示层、QML Facade/五个模型、QML offscreen 加载和中文字形；5 个集成测试通过本地 TCP 验证 VirtualPLC、周期 Worker、动态插件、第三周报警—SQLite 闭环和 QML 后端投影闭环。若执行环境禁止监听 socket，这 5 项需要在允许本地环回网络的终端运行。
+测试共 35 项：30 项不需要监听端口，覆盖协议/插件、通信线程、统计与数据质量、报警状态机、SQLite、Widgets 展示层、QML Facade/五个模型、QML offscreen 加载、中文字形，以及视觉算法、播放进度策略、图像所有权、视频 Worker、视觉线程、页面状态和控制器隔离；5 个集成测试通过本地 TCP 验证 VirtualPLC、周期 Worker、动态插件、第三周报警—SQLite 闭环和 QML 后端投影闭环。若执行环境禁止监听 socket，这 5 项需要在允许本地环回网络的终端运行。
 
 字体字形测试使用 Qt offscreen 平台执行，不需要桌面环境：
 
@@ -100,6 +122,8 @@ QML 界面启动后的最短使用路径：
 4. 查看五个测点、60 秒趋势和统计；暂停显示不会停止采集、报警或入库。
 5. 输入 `1800` 并写入目标转速；只有收到后端异步结果后界面才显示成功。
 6. 在 VirtualPLC 注入高温或停止服务，然后在“报警中心”观察激活、确认、恢复和自动重连。
+
+Widgets 视觉实验不要求 VirtualPLC 正在运行。进入“视觉实验”后选择一段包含红色杯子、卡片或瓶盖的本地视频，首帧会先显示检测结果；随后可播放、暂停、继续、停止，并在播放结束后点击“重播”从头打开。无红色目标是正常结果，页面显示 0；容器或编解码器不受当前 OpenCV 后端支持时，错误只显示在视觉页。
 
 ### 功能演示细节
 

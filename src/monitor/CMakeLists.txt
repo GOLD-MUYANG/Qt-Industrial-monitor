@@ -1,3 +1,29 @@
+add_library(monitor_vision STATIC
+    vision/ColorObjectDetector.cpp
+    vision/ColorObjectDetector.h
+    vision/VideoFileWorker.cpp
+    vision/VideoFileWorker.h
+    vision/VisionFrameConverter.cpp
+    vision/VisionFrameConverter.h
+    vision/VisionPlaybackPolicy.cpp
+    vision/VisionPlaybackPolicy.h
+    vision/VisionSession.cpp
+    vision/VisionSession.h
+    vision/VisionTypes.cpp
+    vision/VisionTypes.h
+)
+target_include_directories(monitor_vision PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/vision"
+    "${OpenCV_INCLUDE_DIRS}"
+)
+target_link_libraries(monitor_vision PUBLIC
+    Qt6::Core
+    Qt6::Gui
+    opencv_core
+    opencv_imgproc
+    opencv_videoio
+)
+
 add_library(monitor_application STATIC
     application/DeviceSession.cpp
     application/DeviceSession.h
@@ -47,6 +73,8 @@ add_library(monitor_presentation STATIC
     presentation/pages/DevicePage.h
     presentation/pages/RealtimePage.cpp
     presentation/pages/RealtimePage.h
+    presentation/pages/VisionPage.cpp
+    presentation/pages/VisionPage.h
 )
 target_include_directories(monitor_presentation PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/domain"
@@ -57,6 +85,7 @@ target_include_directories(monitor_presentation PUBLIC
 target_link_libraries(monitor_presentation PUBLIC
     industrial_ui_support
     monitor_application
+    monitor_vision
     Qt6::Charts
     Qt6::Widgets
 )
@@ -70,7 +99,10 @@ target_include_directories(monitor_runtime PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/data"
     "${CMAKE_CURRENT_SOURCE_DIR}/domain"
 )
-target_link_libraries(monitor_runtime PUBLIC monitor_application)
+target_link_libraries(monitor_runtime PUBLIC
+    monitor_application
+    monitor_vision
+)
 
 add_executable(industrial_monitor main.cpp)
 target_link_libraries(industrial_monitor PRIVATE

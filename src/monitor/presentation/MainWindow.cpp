@@ -3,6 +3,7 @@
 #include "AlarmPage.h"
 #include "DevicePage.h"
 #include "RealtimePage.h"
+#include "VisionPage.h"
 
 #include <QHBoxLayout>
 #include <QListWidget>
@@ -10,11 +11,14 @@
 #include <QStatusBar>
 #include <QWidget>
 
+using namespace industrial::monitor::vision;
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_realtimePage(new RealtimePage(this))
     , m_devicePage(new DevicePage(this))
     , m_alarmPage(new AlarmPage(this))
+    , m_visionPage(new VisionPage(this))
 {
     setWindowTitle(QStringLiteral("Industrial Monitor"));
     resize(1180, 760);
@@ -30,11 +34,13 @@ MainWindow::MainWindow(QWidget *parent)
     navigation->addItem(QStringLiteral("实时监控"));
     navigation->addItem(QStringLiteral("设备管理"));
     navigation->addItem(QStringLiteral("报警中心"));
+    navigation->addItem(QStringLiteral("视觉实验"));
     navigation->setCurrentRow(0);
     auto *pages = new QStackedWidget(central);
     pages->addWidget(m_realtimePage);
     pages->addWidget(m_devicePage);
     pages->addWidget(m_alarmPage);
+    pages->addWidget(m_visionPage);
     layout->addWidget(navigation);
     layout->addWidget(pages, 1);
     setCentralWidget(central);
@@ -69,6 +75,35 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::saveDeviceRequested);
     connect(m_alarmPage, &AlarmPage::acknowledgeRequested,
             this, &MainWindow::acknowledgeRequested);
+    connect(m_visionPage, &VisionPage::openVideoRequested,
+            this, &MainWindow::openVisionVideoRequested);
+    connect(m_visionPage, &VisionPage::playRequested,
+            this, &MainWindow::playVisionVideoRequested);
+    connect(m_visionPage, &VisionPage::pauseRequested,
+            this, &MainWindow::pauseVisionVideoRequested);
+    connect(m_visionPage, &VisionPage::stopRequested,
+            this, &MainWindow::stopVisionVideoRequested);
+}
+
+void MainWindow::showVisionSource(const VisionSourceInfo &source)
+{
+    m_visionPage->setSourceInfo(source);
+}
+
+void MainWindow::showVisionFrame(const VisionFrameResult &frame)
+{
+    m_visionPage->setFrame(frame);
+}
+
+void MainWindow::setVisionPlaybackState(VisionPlaybackState state,
+                                        const QString &message)
+{
+    m_visionPage->setPlaybackState(state, message);
+}
+
+void MainWindow::showVisionError(const QString &message)
+{
+    m_visionPage->showError(message);
 }
 
 void MainWindow::addProtocol(

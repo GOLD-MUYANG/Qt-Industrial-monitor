@@ -16,7 +16,8 @@ int main(int argc, char *argv[])
     configureChineseUiFont();
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("第三周报警、SQLite 与主要界面验收入口"));
+    parser.setApplicationDescription(
+        QStringLiteral("工业监控与 OpenCV 视觉实验 Widgets 入口"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addOption({QStringLiteral("plugin-dir"), QStringLiteral("动态协议插件目录"),
@@ -63,6 +64,14 @@ int main(int argc, char *argv[])
     QObject::connect(&controller, &ApplicationController::fatalError, &window,
                      [&window](const QString &message)
                      { window.setStorageStatus(message, false); });
+    QObject::connect(&controller, &ApplicationController::visionSourceOpened, &window,
+                     &MainWindow::showVisionSource);
+    QObject::connect(&controller, &ApplicationController::visionFrameReady, &window,
+                     &MainWindow::showVisionFrame);
+    QObject::connect(&controller, &ApplicationController::visionStateChanged, &window,
+                     &MainWindow::setVisionPlaybackState);
+    QObject::connect(&controller, &ApplicationController::visionError, &window,
+                     &MainWindow::showVisionError);
 
     QObject::connect(&window, &MainWindow::connectRequested, &controller,
                      &ApplicationController::connectDevice);
@@ -74,6 +83,14 @@ int main(int argc, char *argv[])
                      &ApplicationController::applyDeviceConfig);
     QObject::connect(&window, &MainWindow::acknowledgeRequested, &controller,
                      &ApplicationController::acknowledgeAlarm);
+    QObject::connect(&window, &MainWindow::openVisionVideoRequested, &controller,
+                     &ApplicationController::openVisionVideo);
+    QObject::connect(&window, &MainWindow::playVisionVideoRequested, &controller,
+                     &ApplicationController::playVisionVideo);
+    QObject::connect(&window, &MainWindow::pauseVisionVideoRequested, &controller,
+                     &ApplicationController::pauseVisionVideo);
+    QObject::connect(&window, &MainWindow::stopVisionVideoRequested, &controller,
+                     &ApplicationController::stopVisionVideo);
     QObject::connect(&application, &QCoreApplication::aboutToQuit, &controller,
                      [&controller]() { controller.shutdown(); });
 

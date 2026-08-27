@@ -24,6 +24,11 @@ find_package(Qt6 6.2 REQUIRED COMPONENTS
     Test
     Widgets
 )
+find_package(OpenCV 4 REQUIRED COMPONENTS
+    core
+    imgproc
+    videoio
+)
 
 include(cmake/ResolveQtSerialBus.cmake)
 industrial_resolve_qt_serial_bus()
